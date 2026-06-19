@@ -769,16 +769,25 @@ const translationCache = {};
 async function translateRecipe(m) {
   if (translationCache[m.id]) return translationCache[m.id];
 
-  const prompt = `Translate the following recipe entirely into Filipino (Tagalog). Keep the exact same structure: recipe name, cuisine line, INGREDIENTS section with bullet items, METHOD section with numbered steps, and NOTE if present. Do not add any extra commentary — output only the translated recipe text.
+  const prompt = `Translate to Tagalog. Reply with ONLY the translated text, no commentary.
 
-${formatForExport(m)}`;
+Name: ${m.name}
+Cuisine: ${m.cuisine}
+Serves: ${m.serves}
+${m.notes ? "Note: " + m.notes : ""}
+
+INGREDIENTS
+${m.ingredients.join("\n")}
+
+METHOD
+${m.method.map((s,i) => (i+1)+". "+s).join("\n")}`;
 
   const response = await fetch("/.netlify/functions/translate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      max_tokens: 1000,
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 600,
       messages: [{ role: "user", content: prompt }]
     })
   });
