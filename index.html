@@ -111,15 +111,32 @@
     font-size: 13px; padding: 9px 16px; border-radius: var(--radius-md);
     border: 1px solid #9c6b00; background: #fff8e6; color: #7a5200;
     cursor: pointer; font-weight: 500; margin-left: 8px;
+    position: relative; overflow: hidden;
   }
   .btn-translate:hover { opacity: 0.85; }
   .btn-translate.active { background: #ffefc0; border-color: #7a5200; }
-  .btn-translate:disabled { opacity: 0.5; cursor: wait; }
+  .btn-translate:disabled { cursor: wait; }
   .detail-lang-badge {
     display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px;
     border-radius: 999px; background: #ffefc0; color: #7a5200;
     margin-bottom: 10px; letter-spacing: 0.04em;
   }
+  .flag-dissolve {
+    display: inline-flex; align-items: center; gap: 6px; position: relative;
+  }
+  .flag-dissolve .flag-gb,
+  .flag-dissolve .flag-ph {
+    font-size: 16px; line-height: 1;
+    transition: opacity 0.6s ease;
+    position: absolute; top: 50%; transform: translateY(-50%);
+  }
+  .flag-dissolve .flag-gb { left: 0; opacity: 1; }
+  .flag-dissolve .flag-ph { left: 0; opacity: 0; }
+  .flag-dissolve.dissolving .flag-gb { animation: flagFadeOut 1.2s ease-in-out infinite alternate; }
+  .flag-dissolve.dissolving .flag-ph { animation: flagFadeIn 1.2s ease-in-out infinite alternate; }
+  @keyframes flagFadeOut { 0% { opacity: 1; } 100% { opacity: 0; } }
+  @keyframes flagFadeIn  { 0% { opacity: 0; } 100% { opacity: 1; } }
+  .flag-dissolve .flag-spacer { width: 20px; display: inline-block; }
   .rate-row { margin-top: 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .rate-label { font-size: 13px; color: var(--text-secondary); }
   .stars { display: flex; gap: 2px; }
@@ -866,8 +883,29 @@ function buildDetail(m){
 
   const translateBtn = document.createElement("button");
   translateBtn.className = "btn-translate";
-  translateBtn.textContent = "🇵🇭 Tagalog";
   translateBtn.title = "Toggle Tagalog translation";
+
+  // Build the flag dissolve inner HTML
+  function setTranslateBtnState(state) {
+    // states: 'english', 'loading', 'tagalog', 'error'
+    if (state === 'english') {
+      translateBtn.disabled = false;
+      translateBtn.classList.remove("active");
+      translateBtn.innerHTML = `<span class="flag-dissolve"><span class="flag-spacer"></span><span class="flag-gb">🇬🇧</span><span class="flag-ph" style="opacity:0">🇵🇭</span></span> Tagalog`;
+    } else if (state === 'loading') {
+      translateBtn.disabled = true;
+      translateBtn.innerHTML = `<span class="flag-dissolve dissolving"><span class="flag-spacer"></span><span class="flag-gb">🇬🇧</span><span class="flag-ph">🇵🇭</span></span> Translating…`;
+    } else if (state === 'tagalog') {
+      translateBtn.disabled = false;
+      translateBtn.classList.add("active");
+      translateBtn.innerHTML = `<span class="flag-dissolve"><span class="flag-spacer"></span><span class="flag-gb" style="opacity:0">🇬🇧</span><span class="flag-ph" style="opacity:1">🇵🇭</span></span> English`;
+    } else if (state === 'error') {
+      translateBtn.disabled = false;
+      translateBtn.classList.remove("active");
+      translateBtn.innerHTML = `❌ Retry`;
+    }
+  }
+  setTranslateBtnState('english');
 
   // Helper: render English content
   function showEnglish() {
@@ -881,8 +919,7 @@ function buildDetail(m){
     m.method.forEach(step=>{ const li=document.createElement("li"); li.textContent=step; ol.appendChild(li); });
     if(m.notes) { detail.querySelector(".detail-note") && (detail.querySelector(".detail-note").textContent = m.notes); }
     exportBtn.textContent = "Copy for WhatsApp";
-    translateBtn.textContent = "🇵🇭 Tagalog";
-    translateBtn.classList.remove("active");
+    setTranslateBtnState('english');
     showingTagalog = false;
   }
 
@@ -917,8 +954,7 @@ function buildDetail(m){
       if(np) np.textContent = noteLine || m.notes;
     }
     exportBtn.textContent = "Kopyahin para sa WhatsApp";
-    translateBtn.textContent = "🇬🇧 English";
-    translateBtn.classList.add("active");
+    setTranslateBtnState('tagalog');
     showingTagalog = true;
   }
 
@@ -929,17 +965,14 @@ function buildDetail(m){
       return;
     }
     // Fetch or use cached translation
-    translateBtn.disabled = true;
-    translateBtn.textContent = "Nagsasalin…";
+    setTranslateBtnState('loading');
     try {
       tagalogText = await translateRecipe(m);
       showTagalog(tagalogText);
     } catch(err) {
       console.error("Translation error:", err);
-      translateBtn.textContent = "❌ " + (err.message || "Error – retry");
-      translateBtn.classList.remove("active");
+      setTranslateBtnState('error');
     }
-    translateBtn.disabled = false;
   };
 
   btnRow.appendChild(exportBtn);
