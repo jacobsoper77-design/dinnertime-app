@@ -887,22 +887,32 @@ function buildDetail(m){
 
   // Build the flag dissolve inner HTML
   function setTranslateBtnState(state) {
-    // states: 'english', 'loading', 'tagalog', 'error'
+    // Clear any existing animation interval
+    if (translateBtn._flagInterval) {
+      clearInterval(translateBtn._flagInterval);
+      translateBtn._flagInterval = null;
+    }
     if (state === 'english') {
       translateBtn.disabled = false;
       translateBtn.classList.remove("active");
-      translateBtn.innerHTML = `<span class="flag-dissolve"><span class="flag-spacer"></span><span class="flag-gb">🇬🇧</span><span class="flag-ph" style="opacity:0">🇵🇭</span></span> Tagalog`;
+      translateBtn.textContent = "🇬🇧 → 🇵🇭 Tagalog";
     } else if (state === 'loading') {
       translateBtn.disabled = true;
-      translateBtn.innerHTML = `<span class="flag-dissolve dissolving"><span class="flag-spacer"></span><span class="flag-gb">🇬🇧</span><span class="flag-ph">🇵🇭</span></span> Translating…`;
+      const frames = ["🇬🇧        🇵🇭", "🇬🇧      🇵🇭", "🇬🇧    🇵🇭", "🇬🇧  🇵🇭", "🇬🇧🇵🇭", "🇬🇧  🇵🇭", "🇬🇧    🇵🇭", "🇬🇧      🇵🇭"];
+      let i = 0;
+      translateBtn.textContent = frames[0];
+      translateBtn._flagInterval = setInterval(() => {
+        i = (i + 1) % frames.length;
+        translateBtn.textContent = frames[i];
+      }, 150);
     } else if (state === 'tagalog') {
       translateBtn.disabled = false;
       translateBtn.classList.add("active");
-      translateBtn.innerHTML = `<span class="flag-dissolve"><span class="flag-spacer"></span><span class="flag-gb" style="opacity:0">🇬🇧</span><span class="flag-ph" style="opacity:1">🇵🇭</span></span> English`;
+      translateBtn.textContent = "🇵🇭 → 🇬🇧 English";
     } else if (state === 'error') {
       translateBtn.disabled = false;
       translateBtn.classList.remove("active");
-      translateBtn.innerHTML = `❌ Retry`;
+      translateBtn.textContent = "❌ Retry";
     }
   }
   setTranslateBtnState('english');
